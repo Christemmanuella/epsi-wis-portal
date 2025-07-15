@@ -188,13 +188,12 @@
       text-align: center;
       width: 80%;
       max-width: 400px;
-      background-color: #000000; /* Fond noir pour les pop-ups */
-      color: #ffffff; /* Texte en blanc pour lisibilité */
+      background-color: #000000;
+      color: #ffffff;
     }
   </style>
 </head>
 <body>
-  <!-- En-tête avec logos et menu -->
   <div class="header" id="header" style="display: none;">
     <div class="logo-container">
       <img src="/static/assets/epsi_logo.png" alt="EPSI Logo">
@@ -212,9 +211,9 @@
     </nav>
   </div>
 
-  <!-- Inscription -->
   <div class="container mt-5 section" id="registerSection" style="display: block;">
     <div class="card">
+      <h2 class="text-center mb-4 animated-text">Bienvenue sur le portail EPSI WIS</h2>
       <h2 class="text-center mb-4 animated-text">Inscription</h2>
       <form id="registerForm">
         <div class="mb-3">
@@ -237,7 +236,6 @@
     </div>
   </div>
 
-  <!-- Connexion -->
   <div class="container mt-5 section" id="loginSection" style="display: none;">
     <div class="card">
       <h2 class="text-center mb-4 animated-text">Connexion</h2>
@@ -257,7 +255,6 @@
     </div>
   </div>
 
-  <!-- Formulaire spécifique -->
   <div class="container mt-5 section" id="formSection" style="display: none;">
     <div class="card">
       <h2 class="text-center mb-4 animated-text" id="formTitle"></h2>
@@ -266,6 +263,7 @@
         <div class="mb-3">
           <label class="form-label">Nouveau mot de passe</label>
           <input type="password" class="form-control" id="newPassword" name="newPassword" required>
+          <div id="newpassword_error" class="error"></div>
         </div>
         <div class="mb-3">
           <label class="form-label">Confirmer le mot de passe</label>
@@ -278,15 +276,21 @@
     </div>
   </div>
 
-  <!-- Page d'accueil -->
   <div class="container mt-5 section" id="dashboardSection" style="display: none;">
     <div class="card">
       <h2 class="text-center mb-4 animated-text" id="welcomeMessage"></h2>
+      <div class="dashboard-band">
+        <h4>Votre tableau de bord :</h4>
+        <ul id="dashboardStats">
+          <li id="userCluster"></li>
+          <li id="studentCount"></li>
+          <li id="inertiaMetric" style="display: none;"></li>
+        </ul>
+      </div>
       <div class="dashboard-content" id="dashboardContent"></div>
     </div>
   </div>
 
-  <!-- Page Profil -->
   <div class="container mt-5 section" id="profileSection" style="display: none;">
     <div class="card">
       <h2 class="text-center mb-4 animated-text">Profil</h2>
@@ -304,7 +308,6 @@
     </div>
   </div>
 
-  <!-- Modal de confirmation -->
   <div id="confirmationModal" class="modal">
     <div class="modal-content">
       <h3 class="text-center">Confirmation</h3>
@@ -314,7 +317,6 @@
     </div>
   </div>
 
-  <!-- Message de succès -->
   <div id="successMessage" class="modal" style="display: none;">
     <div class="modal-content">
       <h3 class="text-center">Succès</h3>
@@ -323,512 +325,614 @@
     </div>
   </div>
 
+  <div id="imageUploadSuccess" class="modal" style="display: none;">
+    <div class="modal-content">
+      <h3 class="text-center">Succès</h3>
+      <p class="text-center">L'image de profil a été mise à jour avec succès !</p>
+      <button class="btn btn-custom mt-3" id="closeImageUpload">OK</button>
+    </div>
+  </div>
+
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script>
     let userData = JSON.parse(localStorage.getItem('userData')) || {};
 
     window.onload = function() {
-        if (!userData.email || !userData.password) {
-            userData = {};
-            localStorage.removeItem('userData');
-            document.getElementById('header').style.display = 'none';
-            document.getElementById('registerSection').style.display = 'block';
-            document.getElementById('loginSection').style.display = 'none';
-            document.getElementById('formSection').style.display = 'none';
-            document.getElementById('dashboardSection').style.display = 'none';
-            document.getElementById('profileSection').style.display = 'none';
-        } else {
-            validateSession();
-        }
+      if (!userData.email || !userData.password) {
+        userData = {};
+        localStorage.removeItem('userData');
+        document.getElementById('header').style.display = 'none';
+        document.getElementById('registerSection').style.display = 'block';
+        document.getElementById('loginSection').style.display = 'none';
+        document.getElementById('formSection').style.display = 'none';
+        document.getElementById('dashboardSection').style.display = 'none';
+        document.getElementById('profileSection').style.display = 'none';
+      } else {
+        validateSession();
+      }
     };
 
     function validateSession() {
-        fetch(`http://localhost:5000/validate_session?email=${encodeURIComponent(userData.email)}`, {
-            method: 'GET',
-            headers: { 'Content-Type': 'application/json' }
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.valid) {
-                document.getElementById('header').style.display = 'flex';
-                document.getElementById('registerSection').style.display = 'none';
-                document.getElementById('loginSection').style.display = 'none';
-                document.getElementById('formSection').style.display = 'none';
-                document.getElementById('dashboardSection').style.display = 'block';
-                loadDashboard();
-            } else {
-                userData = {};
-                localStorage.removeItem('userData');
-                document.getElementById('header').style.display = 'none';
-                document.getElementById('registerSection').style.display = 'block';
-            }
-        })
-        .catch(error => {
-            console.error('Erreur de validation:', error);
-            userData = {};
-            localStorage.removeItem('userData');
-            document.getElementById('header').style.display = 'none';
-            document.getElementById('registerSection').style.display = 'block';
-        });
+      fetch(`http://localhost:5000/validate_session?email=${encodeURIComponent(userData.email)}`, {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' }
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.valid) {
+          document.getElementById('header').style.display = 'flex';
+          document.getElementById('registerSection').style.display = 'none';
+          document.getElementById('loginSection').style.display = 'none';
+          document.getElementById('formSection').style.display = 'none';
+          document.getElementById('dashboardSection').style.display = 'block';
+          loadDashboard();
+        } else {
+          userData = {};
+          localStorage.removeItem('userData');
+          document.getElementById('header').style.display = 'none';
+          document.getElementById('registerSection').style.display = 'block';
+        }
+      })
+      .catch(error => {
+        console.error('Erreur de validation:', error);
+        userData = {};
+        localStorage.removeItem('userData');
+        document.getElementById('header').style.display = 'none';
+        document.getElementById('registerSection').style.display = 'block';
+      });
     }
 
     document.getElementById('homeLink').addEventListener('click', function(e) {
-        e.preventDefault();
-        if (userData.email && userData.password) {
-            document.getElementById('profileSection').style.display = 'none';
-            loadDashboard();
-        } else {
-            document.getElementById('registerSection').style.display = 'block';
-            document.getElementById('dashboardSection').style.display = 'none';
-            document.getElementById('profileSection').style.display = 'none';
-        }
+      e.preventDefault();
+      if (userData.email && userData.password) {
+        document.getElementById('profileSection').style.display = 'none';
+        loadDashboard();
+      } else {
+        document.getElementById('registerSection').style.display = 'block';
+        document.getElementById('dashboardSection').style.display = 'none';
+        document.getElementById('profileSection').style.display = 'none';
+      }
     });
 
     document.getElementById('profileLink').addEventListener('click', function(e) {
-        e.preventDefault();
-        if (userData.email && userData.password) {
-            document.getElementById('dashboardSection').style.display = 'none';
-            document.getElementById('profileSection').style.display = 'block';
-            loadProfile();
-        } else {
-            document.getElementById('registerSection').style.display = 'block';
-            document.getElementById('dashboardSection').style.display = 'none';
-            document.getElementById('profileSection').style.display = 'none';
-        }
+      e.preventDefault();
+      if (userData.email && userData.password) {
+        document.getElementById('dashboardSection').style.display = 'none';
+        document.getElementById('profileSection').style.display = 'block';
+        loadProfile();
+      } else {
+        document.getElementById('registerSection').style.display = 'block';
+        document.getElementById('dashboardSection').style.display = 'none';
+        document.getElementById('profileSection').style.display = 'none';
+      }
     });
 
     document.getElementById('loginLink').addEventListener('click', function(e) {
-        e.preventDefault();
-        document.getElementById('registerSection').style.display = 'none';
-        document.getElementById('loginSection').style.display = 'block';
+      e.preventDefault();
+      document.getElementById('registerSection').style.display = 'none';
+      document.getElementById('loginSection').style.display = 'block';
     });
 
     document.getElementById('registerForm').addEventListener('submit', function(e) {
-        e.preventDefault();
-        const formation = document.getElementById('formation').value;
-        const email = document.getElementById('email').value;
-        const emailError = document.getElementById('emailError');
-        if (!email.endsWith('@ecoles-epsi.net') && !email.endsWith('@ecoles-wis.net')) {
-            emailError.textContent = 'Veuillez entrer un email EPSI/WIS valide.';
-            return;
+      e.preventDefault();
+      const formation = document.getElementById('formation').value;
+      const email = document.getElementById('email').value;
+      const emailError = document.getElementById('emailError');
+      if (!email.endsWith('@ecoles-epsi.net') && !email.endsWith('@ecoles-wis.net')) {
+        emailError.textContent = 'Veuillez entrer un email EPSI/WIS valide.';
+        return;
+      }
+      emailError.textContent = '';
+      console.log('Envoi de:', { email, formation });
+      fetch('http://localhost:5000/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, formation })
+      })
+      .then(response => {
+        console.log('Statut HTTP:', response.status);
+        if (!response.ok) {
+          return response.json().then(errorData => {
+            throw new Error(`Réponse non OK: ${response.status} - ${JSON.stringify(errorData)}`);
+          });
         }
-        emailError.textContent = '';
-        fetch('http://localhost:5000/register', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email: email, formation: formation })
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.error) {
-                emailError.textContent = data.error;
-            } else {
-                userData.email = data.email;
-                userData.formation = data.formation;
-                localStorage.setItem('userData', JSON.stringify(userData));
-                document.getElementById('registerSection').style.display = 'none';
-                if (data.next === 'form') {
-                    loadForm();
-                }
-            }
-        })
-        .catch(error => console.error('Erreur:', error));
+        return response.json();
+      })
+      .then(data => {
+        if (data.error) {
+          emailError.textContent = data.error;
+        } else {
+          userData.email = data.email;
+          userData.formation = data.formation;
+          localStorage.setItem('userData', JSON.stringify(userData));
+          document.getElementById('registerSection').style.display = 'none';
+          if (data.next === 'form') {
+            loadForm();
+          }
+        }
+      })
+      .catch(error => {
+        console.error('Erreur lors de l\'inscription:', error);
+        emailError.textContent = 'Erreur serveur, veuillez réessayer. Détails : ' + error.message;
+      });
     });
 
     document.getElementById('registerLink').addEventListener('click', function(e) {
-        e.preventDefault();
-        document.getElementById('loginSection').style.display = 'none';
-        document.getElementById('registerSection').style.display = 'block';
+      e.preventDefault();
+      document.getElementById('loginSection').style.display = 'none';
+      document.getElementById('registerSection').style.display = 'block';
     });
 
     document.getElementById('loginForm').addEventListener('submit', function(e) {
-        e.preventDefault();
-        const loginEmail = document.getElementById('loginEmail').value;
-        const loginPassword = document.getElementById('loginPassword').value;
-        fetch('http://localhost:5000/login', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email: loginEmail, password: loginPassword })
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.error) {
-                document.getElementById('loginError').textContent = data.error;
-            } else {
-                userData.email = loginEmail;
-                userData.password = loginPassword;
-                userData.formation = data.formation;
-                localStorage.setItem('userData', JSON.stringify(userData));
-                document.getElementById('header').style.display = 'flex';
-                document.getElementById('loginSection').style.display = 'none';
-                if (data.next === 'dashboard') {
-                    loadDashboard();
-                }
-            }
-        })
-        .catch(error => console.error('Erreur:', error));
+      e.preventDefault();
+      const loginEmail = document.getElementById('loginEmail').value;
+      const loginPassword = document.getElementById('loginPassword').value;
+      fetch('http://localhost:5000/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: loginEmail, password: loginPassword })
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.error) {
+          document.getElementById('loginError').textContent = data.error;
+        } else {
+          userData.email = loginEmail;
+          userData.password = loginPassword;
+          userData.formation = data.formation;
+          localStorage.setItem('userData', JSON.stringify(userData));
+          document.getElementById('header').style.display = 'flex';
+          document.getElementById('loginSection').style.display = 'none';
+          if (data.next === 'dashboard') {
+            loadDashboard();
+          }
+        }
+      })
+      .catch(error => console.error('Erreur:', error));
     });
 
     function loadForm() {
-        const formation = userData.formation || localStorage.getItem('formation_' + userData.email);
-        document.getElementById('formTitle').textContent = `Formulaire ${formation}`;
-        let fields = {};
-        if (formation === 'ASRBD') {
-            fields = {
-                'Civilité': 'select', 'Nom': 'text', 'Prénom': 'text', 'Date de Naissance': 'date',
-                'Lieu de Naissance': 'text', 'Département de Naissance': 'text', 'Pays': 'text',
-                'Adresse': 'text', 'CP': 'text', 'Ville': 'text', 'Tel Fixe': 'tel',
-                'Tel Mobile': 'tel', 'Adresse mail personnelle': 'email',
-                'Diplôme ou niveau d’études': 'text', 'Expérience professionnelle': 'text',
-                'Financement': 'text'
-            };
-        } else if (formation === 'EISI' || formation === 'DEVIA') {
-            fields = {
-                'Civilité': 'select', 'ID Candidat (IGOR)': 'text', 'Identifiant candidat': 'text', 'Campus': 'text',
-                'Nom de naissance': 'text', 'Prénom': 'text',
-                'Date de naissance': 'date', 'Code postal ville de naissance': 'text',
-                'Lieu de naissance (Ville)': 'text', 'Pays de naissance': 'text',
-                'Nationalité': 'text', 'Intitulé du dernier diplôme': 'text',
-                'Niveau du dernier diplôme': 'text', 'Année d’obtention': 'number',
-                'Décision du jury': 'text', 'Année de première inscription': 'number',
-                'Voie d’accès': 'text', 'Situation avant cursus': 'text',
-                'Dernier métier exercé': 'text', 'Nom de l’entreprise': 'text',
-                'Durée de l’expérience': 'number', 'Téléphone portable personnel': 'tel',
-                'Adresse mail personnelle': 'email'
-            };
-        }
-        let fieldsHtml = '';
-        for (let field in fields) {
-            if (fields[field] === 'select' && field === 'Civilité') {
-                fieldsHtml += `<div class="mb-3"><label class="form-label">${field}</label><select class="form-control" name="${field.toLowerCase().replace(/ /g, '_')}" required><option value="">Choisir</option><option value="Monsieur">Monsieur</option><option value="Madame">Madame</option></select></div>`;
+      const formation = userData.formation || localStorage.getItem('formation_' + userData.email);
+      document.getElementById('formTitle').textContent = `Formulaire ${formation}`;
+      let fields = {};
+      if (formation === 'ASRBD') {
+        fields = {
+          'Civilité': 'select', 'Nom': 'text', 'Prénom': 'text', 'Date_de_Naissance': 'date',
+          'Lieu_de_Naissance': 'text', 'Département_de_Naissance': 'text', 'Pays': 'select',
+          'Adresse': 'text', 'CP': 'text', 'Ville': 'text', 'Tel_Fixe': 'tel',
+          'Tel_Mobile': 'tel', 'Adresse_mail_personnelle': 'email',
+          'Diplôme_ou_niveau_d_études': 'select', 'Expérience_professionnelle': 'select',
+          'Durée_de_l_expérience': 'select', 'Financement': 'select'
+        };
+      } else if (formation === 'EISI' || formation === 'DEVIA') {
+        fields = {
+          'Civilité': 'select', 'ID_Candidat_IGOR': 'text', 'Identifiant_candidat': 'text', 'Campus': 'text',
+          'Nom_de_naissance': 'text', 'Prénom': 'text',
+          'Date_de_naissance': 'date', 'Code_postal_ville_naissance': 'text',
+          'Lieu_de_naissance_ville': 'text', 'Pays_de_naissance': 'select',
+          'Nationalité': 'text', 'Dernier_diplôme': 'text',
+          'Niveau_dernier_diplome': 'select', 'Année_d_obtention': 'number',
+          'Décision_du_jury': 'text', 'Année_de_première_inscription': 'number',
+          'Voie_d_accès': 'text', 'Situation_avant_cursus': 'text',
+          'Dernier_métier': 'text', 'Nom_de_l_entreprise': 'text',
+          'Durée_de_l_expérience': 'select', 'Téléphone_portable': 'tel',
+          'Adresse_mail_personnelle': 'email'
+        };
+      }
+      let fieldsHtml = '';
+      fetch(`http://localhost:5000/user_data?email=${encodeURIComponent(userData.email)}`)
+        .then(response => response.json())
+        .then(data => {
+          const formData = data.form;
+          for (let field in fields) {
+            if (fields[field] === 'select') {
+              if (field === 'Civilité') {
+                fieldsHtml += `<div class="mb-3"><label class="form-label">${field}</label><select class="form-control" name="${field}" required><option value="">Choisir</option><option value="Monsieur" ${formData[field] === 'Monsieur' ? 'selected' : ''}>Monsieur</option><option value="Madame" ${formData[field] === 'Madame' ? 'selected' : ''}>Madame</option></select></div>`;
+              } else if (field === 'Pays' || field === 'Pays_de_naissance') {
+                fieldsHtml += `<div class="mb-3"><label class="form-label">${field}</label><select class="form-control" name="${field}" required><option value="">Choisir</option><option value="France" ${formData[field] === 'France' ? 'selected' : ''}>France</option><option value="Côte d'Ivoire" ${formData[field] === 'Côte d\'Ivoire' ? 'selected' : ''}>Côte d'Ivoire</option><option value="Autre" ${formData[field] === 'Autre' ? 'selected' : ''}>Autre</option></select></div>`;
+              } else if (field === 'Diplôme_ou_niveau_d_études' || field === 'Niveau_dernier_diplome') {
+                fieldsHtml += `<div class="mb-3"><label class="form-label">${field}</label><select class="form-control" name="${field}" required><option value="">Choisir</option><option value="Bac+2" ${formData[field] === 'Bac+2' ? 'selected' : ''}>Bac+2</option><option value="Licence" ${formData[field] === 'Licence' ? 'selected' : ''}>Licence</option><option value="Bachelor" ${formData[field] === 'Bachelor' ? 'selected' : ''}>Bachelor</option><option value="Master" ${formData[field] === 'Master' ? 'selected' : ''}>Master</option><option value="Autre" ${formData[field] === 'Autre' ? 'selected' : ''}>Autre</option></select></div>`;
+              } else if (field === 'Expérience_professionnelle') {
+                fieldsHtml += `<div class="mb-3"><label class="form-label">${field}</label><select class="form-control" name="${field}" required><option value="">Choisir</option><option value="Débutant" ${formData[field] === 'Débutant' ? 'selected' : ''}>Débutant</option><option value="Junior" ${formData[field] === 'Junior' ? 'selected' : ''}>Junior</option><option value="Confirmé" ${formData[field] === 'Confirmé' ? 'selected' : ''}>Confirmé</option><option value="Senior" ${formData[field] === 'Senior' ? 'selected' : ''}>Senior</option><option value="Autre" ${formData[field] === 'Autre' ? 'selected' : ''}>Autre</option></select></div>`;
+              } else if (field === 'Durée_de_l_expérience') {
+                fieldsHtml += `<div class="mb-3"><label class="form-label">${field}</label><select class="form-control" name="${field}" required><option value="">Choisir</option><option value="0-2 ans" ${formData[field] === '0-2 ans' ? 'selected' : ''}>0-2 ans</option><option value="3-5 ans" ${formData[field] === '3-5 ans' ? 'selected' : ''}>3-5 ans</option><option value="6-10 ans" ${formData[field] === '6-10 ans' ? 'selected' : ''}>6-10 ans</option><option value="10+ ans" ${formData[field] === '10+ ans' ? 'selected' : ''}>10+ ans</option></select></div>`;
+              } else if (field === 'Financement') {
+                fieldsHtml += `<div class="mb-3"><label class="form-label">${field}</label><select class="form-control" name="${field}" required><option value="">Choisir</option><option value="Parents" ${formData[field] === 'Parents' ? 'selected' : ''}>Parents</option><option value="Entreprise" ${formData[field] === 'Entreprise' ? 'selected' : ''}>Entreprise</option><option value="Personnel" ${formData[field] === 'Personnel' ? 'selected' : ''}>Personnel</option><option value="Bourse" ${formData[field] === 'Bourse' ? 'selected' : ''}>Bourse</option><option value="Autre" ${formData[field] === 'Autre' ? 'selected' : ''}>Autre</option></select></div>`;
+              }
             } else {
-                fieldsHtml += `<div class="mb-3"><label class="form-label">${field}</label><input type="${fields[field]}" class="form-control" name="${field.toLowerCase().replace(/ /g, '_')}" required></div>`;
+              const value = formData[field] || '';
+              fieldsHtml += `<div class="mb-3"><label class="form-label">${field}</label><input type="${fields[field]}" class="form-control" name="${field}" value="${value}" ${fields[field] === 'date' ? '' : 'required'}></div>`;
             }
-        }
-        document.getElementById('formFields').innerHTML = fieldsHtml;
-        document.getElementById('formSection').style.display = 'block';
+          }
+          document.getElementById('formFields').innerHTML = fieldsHtml;
+          document.getElementById('formSection').style.display = 'block';
+        })
+        .catch(error => console.error('Erreur lors du chargement des données:', error));
     }
 
     document.getElementById('specificForm').addEventListener('submit', function(e) {
-        e.preventDefault();
-        const form = this;
-        let isValid = true;
-        let formData = {};
-        form.querySelectorAll('input[required], select[required]').forEach(input => {
-            const errorDiv = document.getElementById(`${input.name}_error`) || document.createElement('div');
-            if (!errorDiv.parentElement) {
-                errorDiv.className = 'error';
-                errorDiv.id = `${input.name}_error`;
-                input.parentElement.appendChild(errorDiv);
-            }
-            errorDiv.textContent = '';
-            if (!input.value || (input.nodeName === 'SELECT' && input.value === '')) {
-                errorDiv.textContent = 'Veuillez remplir ce champ.';
-                isValid = false;
-            } else {
-                const fieldName = input.name.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()).replace(/ /g, '_');
-                formData[fieldName] = input.value;
-            }
-        });
-        const newPassword = document.getElementById('newPassword').value;
-        const confirmPassword = document.getElementById('confirmPassword').value;
-        let passwordError = document.getElementById('newpassword_error');
-        if (!passwordError) {
-            passwordError = document.createElement('div');
-            passwordError.className = 'error';
-            passwordError.id = 'newpassword_error';
-            document.getElementById('newPassword').parentElement.appendChild(passwordError);
+      e.preventDefault();
+      const form = this;
+      let isValid = true;
+      let formData = {};
+      form.querySelectorAll('input, select').forEach(input => {
+        const errorDiv = document.getElementById(`${input.name}_error`) || document.createElement('div');
+        if (!errorDiv.parentElement) {
+          errorDiv.className = 'error';
+          errorDiv.id = `${input.name}_error`;
+          input.parentElement.appendChild(errorDiv);
         }
-        passwordError.textContent = '';
-        if (newPassword !== confirmPassword) {
-            passwordError.textContent = 'Les mots de passe ne correspondent pas.';
-            isValid = false;
-        } else if (newPassword.length < 8) {
-            passwordError.textContent = 'Le mot de passe doit contenir au moins 8 caractères.';
-            isValid = false;
+        errorDiv.textContent = '';
+        if (input.hasAttribute('required') && (!input.value || (input.nodeName === 'SELECT' && input.value === ''))) {
+          errorDiv.textContent = 'Veuillez remplir ce champ.';
+          isValid = false;
         } else {
-            formData['Password'] = newPassword;
+          formData[input.name] = input.value || '';
         }
-        if (isValid) {
-            document.getElementById('confirmationModal').style.display = 'block';
-            window.formData = formData;
-            console.log('Données envoyées au serveur:', formData); // Débogage
-        }
+      });
+      console.log('Données du formulaire avant validation:', formData);
+      const newPassword = document.getElementById('newPassword').value;
+      const confirmPassword = document.getElementById('confirmPassword').value;
+      let passwordError = document.getElementById('newpassword_error');
+      if (!passwordError) {
+        passwordError = document.createElement('div');
+        passwordError.className = 'error';
+        passwordError.id = 'newpassword_error';
+        document.getElementById('newPassword').parentElement.appendChild(passwordError);
+      }
+      passwordError.textContent = '';
+      if (newPassword !== confirmPassword) {
+        passwordError.textContent = 'Les mots de passe ne correspondent pas.';
+        isValid = false;
+      } else if (newPassword.length < 8) {
+        passwordError.textContent = 'Le mot de passe doit contenir au moins 8 caractères.';
+        isValid = false;
+      } else {
+        formData['Password'] = newPassword;
+      }
+      if (isValid) {
+        document.getElementById('confirmationModal').style.display = 'block';
+        window.formData = formData;
+        console.log('Données envoyées au serveur:', formData);
+      }
     });
 
     document.getElementById('confirmSubmit').addEventListener('click', function() {
-        document.getElementById('confirmationModal').style.display = 'none';
-        fetch('http://localhost:5000/submit_form', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ ...window.formData, email: userData.email, formation: userData.formation })
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.error) {
-                document.getElementById('formError').textContent = data.error;
-            } else {
-                document.getElementById('formSection').style.display = 'none';
-                document.getElementById('successMessage').style.display = 'block';
-                window.formData = {};
-                userData = {};
-                localStorage.removeItem('userData');
-                document.getElementById('header').style.display = 'none';
-                document.getElementById('loginSection').style.display = 'block';
-            }
-        })
-        .catch(error => console.error('Erreur:', error));
+      document.getElementById('confirmationModal').style.display = 'none';
+      fetch('http://localhost:5000/submit_form', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...window.formData, email: userData.email, formation: userData.formation })
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.error) {
+          document.getElementById('formError').textContent = data.error;
+        } else {
+          document.getElementById('formSection').style.display = 'none';
+          document.getElementById('successMessage').style.display = 'block';
+          window.formData = {};
+          userData = {};
+          localStorage.removeItem('userData');
+          document.getElementById('header').style.display = 'none';
+          document.getElementById('loginSection').style.display = 'block';
+        }
+      })
+      .catch(error => console.error('Erreur:', error));
     });
 
     document.getElementById('cancelSubmit').addEventListener('click', function() {
-        document.getElementById('confirmationModal').style.display = 'none';
+      document.getElementById('confirmationModal').style.display = 'none';
     });
 
     document.getElementById('closeSuccess').addEventListener('click', function() {
-        document.getElementById('successMessage').style.display = 'none';
-        userData = {};
-        localStorage.removeItem('userData');
-        document.getElementById('header').style.display = 'none';
-        document.getElementById('loginSection').style.display = 'block';
-        document.getElementById('loginEmail').value = userData.email || '';
+      document.getElementById('successMessage').style.display = 'none';
+      userData = {};
+      localStorage.removeItem('userData');
+      document.getElementById('header').style.display = 'none';
+      document.getElementById('loginSection').style.display = 'block';
+      document.getElementById('loginEmail').value = userData.email || '';
     });
 
     document.getElementById('backButton').addEventListener('click', function() {
-        document.getElementById('formSection').style.display = 'none';
-        userData = {};
-        localStorage.removeItem('userData');
-        document.getElementById('header').style.display = 'none';
-        document.getElementById('registerSection').style.display = 'block';
-        document.getElementById('email').value = userData.email || '';
+      document.getElementById('formSection').style.display = 'none';
+      userData = {};
+      localStorage.removeItem('userData');
+      document.getElementById('header').style.display = 'none';
+      document.getElementById('registerSection').style.display = 'block';
+      document.getElementById('email').value = userData.email || '';
     });
 
     function loadDashboard() {
-        document.getElementById('dashboardSection').style.display = 'block';
-        document.getElementById('registerSection').style.display = 'none';
-        document.getElementById('loginSection').style.display = 'none';
-        document.getElementById('formSection').style.display = 'none';
-        document.getElementById('profileSection').style.display = 'none';
-        fetch(`http://localhost:5000/user_data?email=${encodeURIComponent(userData.email)}`, {
-            method: 'GET',
-            headers: { 'Content-Type': 'application/json' }
+      document.getElementById('dashboardSection').style.display = 'block';
+      document.getElementById('registerSection').style.display = 'none';
+      document.getElementById('loginSection').style.display = 'none';
+      document.getElementById('formSection').style.display = 'none';
+      document.getElementById('profileSection').style.display = 'none';
+      fetch(`http://localhost:5000/user_data?email=${encodeURIComponent(userData.email)}`, {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' }
+      })
+      .then(response => response.json())
+      .then(data => {
+        const formation = data.formation;
+        let dashboardContent = '';
+        document.getElementById('welcomeMessage').textContent = `Bienvenue dans la Formation ${formation}`;
+        if (formation === 'ASRBD') {
+          dashboardContent = `
+            <div class="dashboard-band">
+              <h4>ASRBD – Administration, Sécurité des Réseaux et Base de Données</h4>
+            </div>
+            <div class="dashboard-band">
+              <h5>Objectifs :</h5>
+              <ul>
+                <li>Former des administrateurs systèmes et réseaux capables de gérer des infrastructures complexes.</li>
+                <li>Développer des compétences en cybersécurité et gestion des bases de données.</li>
+                <li>Préparer aux métiers liés à la maintenance, sécurité, virtualisation, cloud computing et data management.</li>
+              </ul>
+            </div>
+            <div class="dashboard-band">
+              <h5>Programme type :</h5>
+              <ul>
+                <li>Systèmes d’exploitation (Linux, Windows Server)</li>
+                <li>Administration réseaux (TCP/IP, DHCP, DNS, VLAN, routage, firewall…)</li>
+                <li>Sécurité informatique (chiffrement, attaques, défense, audits…)</li>
+                <li>Virtualisation & cloud (VMware, Hyper-V, Azure, AWS…)</li>
+                <li>Scripting (PowerShell, Bash)</li>
+                <li>Bases de données (SQL Server, MySQL, Oracle…)</li>
+                <li>Sauvegarde, supervision, PRA/PCA</li>
+                <li>Mise en place d'infrastructures sécurisées (SIEM, IDS/IPS)</li>
+              </ul>
+            </div>
+            <div class="dashboard-band">
+              <h4>Débouchés possibles :</h4>
+              <ul>
+                <li>Administrateur systèmes/réseaux, Ingénieur sécurité, DevOps, DBA</li>
+              </ul>
+            </div>
+          `;
+        } else if (formation === 'DEVIA') {
+          dashboardContent = `
+            <div class="dashboard-band">
+              <h4>DEVIA – Développement Informatique et Intelligence Artificielle</h4>
+            </div>
+            <div class="dashboard-band">
+              <h5>Objectifs :</h5>
+              <ul>
+                <li>Former des développeurs fullstack spécialisés en IA et data science.</li>
+                <li>Maîtriser les langages de programmation, le web, les bases de données et les algorithmes d'IA.</li>
+                <li>Comprendre l’éthique de l’IA, les enjeux du machine learning et du deep learning.</li>
+              </ul>
+            </div>
+            <div class="dashboard-band">
+              <h5>Programme type :</h5>
+              <ul>
+                <li>Développement Web & Mobile (HTML, CSS, JavaScript, React, Node.js…)</li>
+                <li>Programmation orientée objet (Python, Java, C#…)</li>
+                <li>Intelligence Artificielle (régression, classification, réseaux de neurones)</li>
+                <li>Machine Learning / Deep Learning (scikit-learn, TensorFlow, Keras…)</li>
+                <li>Bases de données (MySQL, PostgreSQL, MongoDB…)</li>
+                <li>API et microservices (REST, GraphQL)</li>
+                <li>DevOps, intégration continue</li>
+                <li>Projets IA appliqués (chatbot, analyse prédictive, NLP…)</li>
+              </ul>
+            </div>
+            <div class="dashboard-band">
+              <h4>Débouchés possibles :</h4>
+              <ul>
+                <li>Développeur fullstack, Data Scientist, Ingénieur IA, Data Analyst</li>
+              </ul>
+            </div>
+          `;
+        } else if (formation === 'EISI') {
+          dashboardContent = `
+            <div class="dashboard-band">
+              <h4>EISI – Expert en Ingénierie des Systèmes d’Information</h4>
+            </div>
+            <div class="dashboard-band">
+              <h5>Objectifs :</h5>
+              <ul>
+                <li>Former des experts en architecture SI, capables de piloter des projets complexes.</li>
+                <li>Connaître les enjeux de la transformation digitale, du cloud, de la data et du pilotage SI.</li>
+                <li>Développer une approche stratégique, technique et managériale.</li>
+              </ul>
+            </div>
+            <div class="dashboard-band">
+              <h5>Programme type :</h5>
+              <ul>
+                <li>Architecture des SI (urbanisation, cloud, big data)</li>
+                <li>Gouvernance & stratégie SI</li>
+                <li>Management de projet (Agile, Scrum, Prince2)</li>
+                <li>Cybersécurité avancée (audit, normes ISO 27001, RGPD…)</li>
+                <li>Business Intelligence & Data Management</li>
+                <li>Infrastructure Cloud & Virtualisation</li>
+                <li>Innovation & veille technologique</li>
+                <li>Développement d’application à l’échelle (architecture microservices)</li>
+              </ul>
+            </div>
+            <div class="dashboard-band">
+              <h4>Débouchés possibles :</h4>
+              <ul>
+                <li>Architecte SI, DSI, Chef de projet IT, Consultant IT, Expert cloud</li>
+              </ul>
+            </div>
+          `;
+        }
+        document.getElementById('dashboardContent').innerHTML = dashboardContent;
+        fetch(`/submit_form`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: userData.email, formation: formation })
         })
-        .then(response => response.json())
-        .then(data => {
-            const formation = data.formation;
-            let dashboardContent = '';
-            document.getElementById('welcomeMessage').textContent = `Bienvenue dans la Formation ${formation}`;
-            if (formation === 'ASRBD') {
-                dashboardContent = `
-                    <div class="dashboard-band">
-                        <h4>ASRBD – Administration, Sécurité des Réseaux et Base de Données</h4>
-                    </div>
-                    <div class="dashboard-band">
-                        <h5>Objectifs :</h5>
-                        <ul>
-                            <li class="dashboard-band">Former des administrateurs systèmes et réseaux capables de gérer des infrastructures complexes.</li>
-                            <li class="dashboard-band">Développer des compétences en cybersécurité et gestion des bases de données.</li>
-                            <li class="dashboard-band">Préparer aux métiers liés à la maintenance, sécurité, virtualisation, cloud computing et data management.</li>
-                        </ul>
-                    </div>
-                    <div class="dashboard-band">
-                        <h5>Programme type :</h5>
-                        <ul>
-                            <li class="dashboard-band">Systèmes d’exploitation (Linux, Windows Server)</li>
-                            <li class="dashboard-band">Administration réseaux (TCP/IP, DHCP, DNS, VLAN, routage, firewall…)</li>
-                            <li class="dashboard-band">Sécurité informatique (chiffrement, attaques, défense, audits…)</li>
-                            <li class="dashboard-band">Virtualisation & cloud (VMware, Hyper-V, Azure, AWS…)</li>
-                            <li class="dashboard-band">Scripting (PowerShell, Bash)</li>
-                            <li class="dashboard-band">Bases de données (SQL Server, MySQL, Oracle…)</li>
-                            <li class="dashboard-band">Sauvegarde, supervision, PRA/PCA</li>
-                            <li class="dashboard-band">Mise en place d'infrastructures sécurisées (SIEM, IDS/IPS)</li>
-                        </ul>
-                    </div>
-                    <div class="dashboard-band">
-                        <h4>Débouchés possibles :</h4>
-                        <ul>
-                            <li class="dashboard-band">Administrateur systèmes/réseaux, Ingénieur sécurité, DevOps, DBA</li>
-                        </ul>
-                    </div>
-                `;
-            } else if (formation === 'DEVIA') {
-                dashboardContent = `
-                    <div class="dashboard-band">
-                        <h4>DEVIA – Développement Informatique et Intelligence Artificielle</h4>
-                    </div>
-                    <div class="dashboard-band">
-                        <h5>Objectifs :</h5>
-                        <ul>
-                            <li class="dashboard-band">Former des développeurs fullstack spécialisés en IA et data science.</li>
-                            <li class="dashboard-band">Maîtriser les langages de programmation, le web, les bases de données et les algorithmes d'IA.</li>
-                            <li class="dashboard-band">Comprendre l’éthique de l’IA, les enjeux du machine learning et du deep learning.</li>
-                        </ul>
-                    </div>
-                    <div class="dashboard-band">
-                        <h5>Programme type :</h5>
-                        <ul>
-                            <li class="dashboard-band">Développement Web & Mobile (HTML, CSS, JavaScript, React, Node.js…)</li>
-                            <li class="dashboard-band">Programmation orientée objet (Python, Java, C#…)</li>
-                            <li class="dashboard-band">Intelligence Artificielle (régression, classification, réseaux de neurones)</li>
-                            <li class="dashboard-band">Machine Learning / Deep Learning (scikit-learn, TensorFlow, Keras…)</li>
-                            <li class="dashboard-band">Bases de données (MySQL, PostgreSQL, MongoDB…)</li>
-                            <li class="dashboard-band">API et microservices (REST, GraphQL)</li>
-                            <li class="dashboard-band">DevOps, intégration continue</li>
-                            <li class="dashboard-band">Projets IA appliqués (chatbot, analyse prédictive, NLP…)</li>
-                        </ul>
-                    </div>
-                    <div class="dashboard-band">
-                        <h4>Débouchés possibles :</h4>
-                        <ul>
-                            <li class="dashboard-band">Développeur fullstack, Data Scientist, Ingénieur IA, Data Analyst</li>
-                        </ul>
-                    </div>
-                `;
-            } else if (formation === 'EISI') {
-                dashboardContent = `
-                    <div class="dashboard-band">
-                        <h4>EISI – Expert en Ingénierie des Systèmes d’Information</h4>
-                    </div>
-                    <div class="dashboard-band">
-                        <h5>Objectifs :</h5>
-                        <ul>
-                            <li class="dashboard-band">Former des experts en architecture SI, capables de piloter des projets complexes.</li>
-                            <li class="dashboard-band">Connaître les enjeux de la transformation digitale, du cloud, de la data et du pilotage SI.</li>
-                            <li class="dashboard-band">Développer une approche stratégique, technique et managériale.</li>
-                        </ul>
-                    </div>
-                    <div class="dashboard-band">
-                        <h5>Programme type :</h5>
-                        <ul>
-                            <li class="dashboard-band">Architecture des SI (urbanisation, cloud, big data)</li>
-                            <li class="dashboard-band">Gouvernance & stratégie SI</li>
-                            <li class="dashboard-band">Management de projet (Agile, Scrum, Prince2)</li>
-                            <li class="dashboard-band">Cybersécurité avancée (audit, normes ISO 27001, RGPD…)</li>
-                            <li class="dashboard-band">Business Intelligence & Data Management</li>
-                            <li class="dashboard-band">Infrastructure Cloud & Virtualisation</li>
-                            <li class="dashboard-band">Innovation & veille technologique</li>
-                            <li class="dashboard-band">Développement d’application à l’échelle (architecture microservices)</li>
-                        </ul>
-                    </div>
-                    <div class="dashboard-band">
-                        <h4>Débouchés possibles :</h4>
-                        <ul>
-                            <li class="dashboard-band">Architecte SI, DSI, Chef de projet IT, Consultant IT, Expert cloud</li>
-                        </ul>
-                    </div>
-                `;
-            }
-            document.getElementById('dashboardContent').innerHTML = dashboardContent;
-        })
-        .catch(error => console.error('Erreur:', error));
+        .then(resp => resp.json())
+        .then(result => {
+          if (result.cluster !== undefined) {
+            document.getElementById('userCluster').textContent = result.cluster === 0 && result.student_count === 1
+              ? `Vous êtes le premier inscrit dans la formation de ${formation}`
+              : `Votre cluster : ${result.cluster || 0}`;
+          }
+          if (result.student_count !== undefined) {
+            document.getElementById('studentCount').textContent = result.student_count === 1
+              ? `Vous êtes le premier inscrit dans la formation de ${formation}`
+              : `Nombre d'étudiants dans votre formation : ${result.student_count}`;
+          }
+          if (result.inertia !== undefined && userData.email === 'admin@ecoles-epsi.net') {
+            document.getElementById('inertiaMetric').style.display = 'block';
+            document.getElementById('inertiaMetric').textContent = `Inertie (qualité du clustering) : ${result.inertia.toFixed(2)}`;
+          }
+        });
+        fetch(`/student_count?email=${encodeURIComponent(userData.email)}`)
+          .then(resp => resp.json())
+          .then(countData => {
+            console.log('Réponse de /student_count:', countData);
+            const studentCount = countData.count || 0;
+            document.getElementById('studentCount').textContent = studentCount === 1
+              ? `Vous êtes le premier inscrit dans la formation de ${formation}`
+              : `Nombre d'étudiants dans votre formation : ${studentCount}`;
+          });
+      })
+      .catch(error => console.error('Erreur:', error));
     }
 
     function loadProfile() {
-        document.getElementById('dashboardSection').style.display = 'none';
-        document.getElementById('profileSection').style.display = 'block';
-        fetch(`http://localhost:5000/user_data?email=${encodeURIComponent(userData.email)}`, {
-            method: 'GET',
-            headers: { 'Content-Type': 'application/json' }
-        })
-        .then(response => response.json())
-        .then(data => {
-            console.log('Données reçues dans loadProfile:', data); // Débogage
-            const formation = data.formation;
-            let fields = {};
-            if (formation === 'ASRBD') {
-                fields = {
-                    'Civilité': data.form.Civilité || '', 'Nom': data.form.Nom || '', 'Prénom': data.form.Prénom || '',
-                    'Date de Naissance': data.form.Date_de_Naissance || '', 'Lieu de Naissance': data.form.Lieu_de_Naissance || '',
-                    'Département de Naissance': data.form.Département_de_Naissance || '', 'Pays': data.form.Pays || '',
-                    'Adresse': data.form.Adresse || '', 'CP': data.form.CP || '', 'Ville': data.form.Ville || '',
-                    'Tel Fixe': data.form.Tel_Fixe || '', 'Tel Mobile': data.form.Tel_Mobile || '',
-                    'Adresse mail personnelle': data.form.Adresse_mail_personnelle || '',
-                    'Diplôme ou niveau d’études': data.form.Diplôme_ou_niveau_d_études || '',
-                    'Expérience professionnelle': data.form.Expérience_professionnelle || '', 'Financement': data.form.Financement || ''
-                };
-            } else if (formation === 'EISI' || formation === 'DEVIA') {
-                fields = {
-                    'Civilité': data.form.Civilité || '', 'ID Candidat (IGOR)': data.form.ID_Candidat_IGOR || '',
-                    'Identifiant candidat': data.form.Identifiant_candidat || '', 'Campus': data.form.Campus || '',
-                    'Nom de naissance': data.form.Nom_de_naissance || '', 'Prénom': data.form.Prénom || '',
-                    'Date de naissance': data.form.Date_de_naissance || '', 'Code postal ville de naissance': data.form.Code_postal_ville_naissance || '',
-                    'Lieu de naissance (Ville)': data.form.Lieu_de_naissance_ville || '', 'Pays de naissance': data.form.Pays_de_naissance || '',
-                    'Nationalité': data.form.Nationalité || '', 'Intitulé du dernier diplôme': data.form.Dernier_diplôme || '',
-                    'Niveau du dernier diplôme': data.form.Niveau_dernier_diplôme || '', 'Année d’obtention': data.form.Année_d_obtention || '',
-                    'Décision du jury': data.form.Décision_du_jury || '', 'Année de première inscription': data.form.Année_de_première_inscription || '',
-                    'Voie d’accès': data.form.Voie_d_accès || '', 'Situation avant cursus': data.form.Situation_avant_cursus || '',
-                    'Dernier métier exercé': data.form.Dernier_métier || '', 'Nom de l’entreprise': data.form.Nom_de_l_entreprise || '',
-                    'Durée de l’expérience': data.form.Durée_de_l_expérience || '', 'Téléphone portable personnel': data.form.Téléphone_portable || '',
-                    'Adresse mail personnelle': data.form.Adresse_mail_personnelle || ''
-                };
+      document.getElementById('dashboardSection').style.display = 'none';
+      document.getElementById('profileSection').style.display = 'block';
+      fetch(`http://localhost:5000/user_data?email=${encodeURIComponent(userData.email)}`, {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' }
+      })
+      .then(response => response.json())
+      .then(data => {
+        console.log('Données reçues dans loadProfile:', data);
+        const formation = data.formation;
+        let fields = {};
+        if (formation === 'ASRBD') {
+          fields = {
+            'Civilité': data.form.Civilité || 'Non renseigné', 'Nom': data.form.Nom || 'Non renseigné', 'Prénom': data.form.Prénom || 'Non renseigné',
+            'Date_de_Naissance': new Date(data.form.Date_de_Naissance).toISOString().split('T')[0] || 'Non renseigné', 'Lieu_de_Naissance': data.form.Lieu_de_Naissance || 'Non renseigné',
+            'Département_de_Naissance': data.form.Département_de_Naissance || 'Non renseigné', 'Pays': data.form.Pays || 'Non renseigné',
+            'Adresse': data.form.Adresse || 'Non renseigné', 'CP': data.form.CP || 'Non renseigné', 'Ville': data.form.Ville || 'Non renseigné',
+            'Tel_Fixe': data.form.Tel_Fixe || 'Non renseigné', 'Tel_Mobile': data.form.Tel_Mobile || 'Non renseigné',
+            'Adresse_mail_personnelle': data.form.Adresse_mail_personnelle || 'Non renseigné',
+            'Diplôme_ou_niveau_d_études': data.form.Diplôme_ou_niveau_d_études || 'Non renseigné',
+            'Expérience_professionnelle': data.form.Expérience_professionnelle || 'Non renseigné',
+            'Durée_de_l_expérience': data.form.Durée_de_l_expérience || 'Non renseigné',
+            'Financement': data.form.Financement || 'Non renseigné'
+          };
+        } else if (formation === 'EISI' || formation === 'DEVIA') {
+          fields = {
+            'Civilité': data.form.Civilité || 'Non renseigné', 'ID_Candidat_IGOR': data.form.ID_Candidat_IGOR || 'Non renseigné',
+            'Identifiant_candidat': data.form.Identifiant_candidat || 'Non renseigné', 'Campus': data.form.Campus || 'Non renseigné',
+            'Nom_de_naissance': data.form.Nom_de_naissance || 'Non renseigné', 'Prénom': data.form.Prénom || 'Non renseigné',
+            'Date_de_naissance': new Date(data.form.Date_de_naissance).toISOString().split('T')[0] || 'Non renseigné', 'Code_postal_ville_naissance': data.form.Code_postal_ville_naissance || 'Non renseigné',
+            'Lieu_de_naissance_ville': data.form.Lieu_de_naissance_ville || 'Non renseigné', 'Pays_de_naissance': data.form.Pays_de_naissance || 'Non renseigné',
+            'Nationalité': data.form.Nationalité || 'Non renseigné', 'Dernier_diplôme': data.form.Dernier_diplôme || 'Non renseigné',
+            'Niveau_dernier_diplome': data.form.Niveau_dernier_diplome || 'Non renseigné', 'Année_d_obtention': data.form.Année_d_obtention || 'Non renseigné',
+            'Décision_du_jury': data.form.Décision_du_jury || 'Non renseigné', 'Année_de_première_inscription': data.form.Année_de_première_inscription || 'Non renseigné',
+            'Voie_d_accès': data.form.Voie_d_accès || 'Non renseigné', 'Situation_avant_cursus': data.form.Situation_avant_cursus || 'Non renseigné',
+            'Dernier_métier': data.form.Dernier_métier || 'Non renseigné', 'Nom_de_l_entreprise': data.form.Nom_de_l_entreprise || 'Non renseigné',
+            'Durée_de_l_expérience': data.form.Durée_de_l_expérience || 'Non renseigné', 'Téléphone_portable': data.form.Téléphone_portable || 'Non renseigné',
+            'Adresse_mail_personnelle': data.form.Adresse_mail_personnelle || 'Non renseigné'
+          };
+        }
+        let tableHtml = '<thead><tr><th>Informations</th><th>Valeur</th></tr></thead><tbody>';
+        for (let field in fields) {
+          tableHtml += `<tr><td>${field}</td><td>${fields[field]}</td></tr>`;
+        }
+        tableHtml += '</tbody>';
+        document.getElementById('profileData').innerHTML = tableHtml;
+
+        const prenom = fields['Prénom'] || '';
+        const nom = fields['Nom'] || fields['Nom_de_naissance'] || '';
+        const initials = (prenom.charAt(0) + (nom.charAt(0) || '')).toUpperCase() || '??';
+        document.getElementById('profileImage').textContent = initials.substring(0, 2);
+        document.getElementById('profileImageHeader').textContent = initials.substring(0, 2);
+        document.getElementById('profileName').textContent = `${prenom} ${nom}`.trim() || 'Inconnu';
+
+        // Gestion de l'upload d'image
+        document.getElementById('cameraIcon').addEventListener('click', function() {
+          document.getElementById('profileUpload').click();
+        });
+
+        document.getElementById('profileUpload').addEventListener('change', function(e) {
+          const file = e.target.files[0];
+          if (file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+              document.getElementById('profileImage').innerHTML = `<img src="${e.target.result}" alt="Profile Image" class="profile-img">`;
+              document.getElementById('profileImageHeader').innerHTML = `<img src="${e.target.result}" alt="Profile Image" style="height: 40px; border-radius: 50%;">`;
+            };
+            reader.readAsDataURL(file);
+
+            const formData = new FormData();
+            formData.append('profile_image', file);
+            formData.append('email', userData.email);
+
+            fetch('http://localhost:5000/upload_profile_image', {
+              method: 'POST',
+              body: formData
+            })
+            .then(response => {
+              if (!response.ok) throw new Error('Échec de l\'upload');
+              return response.json();
+            })
+            .then(data => {
+              if (data.success) {
+                document.getElementById('imageUploadSuccess').style.display = 'block';
+              } else {
+                alert('Erreur : ' + (data.error || 'Upload échoué'));
+              }
+            })
+            .catch(error => {
+              console.error('Erreur d\'upload:', error);
+              alert('Erreur lors de l\'upload : ' + error.message);
+            });
+          }
+        });
+
+        document.getElementById('closeImageUpload').addEventListener('click', function() {
+          document.getElementById('imageUploadSuccess').style.display = 'none';
+        });
+
+        document.getElementById('changeFormation').addEventListener('click', function() {
+          fetch('http://localhost:5000/change_formation', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: userData.email, formation: '' })
+          })
+          .then(response => response.json())
+          .then(data => {
+            if (data.next === 'form') {
+              userData.formation = '';
+              localStorage.setItem('userData', JSON.stringify(userData));
+              document.getElementById('profileSection').style.display = 'none';
+              loadForm();
             }
-            let tableHtml = '<thead><tr><th>Informations</th><th>Valeur</th></tr></thead><tbody>';
-            for (let field in fields) {
-                tableHtml += `<tr><td>${field}</td><td>${fields[field] || 'Non renseigné'}</td></tr>`; // Afficher 'Non renseigné' si vide
-            }
-            tableHtml += '</tbody>';
-            document.getElementById('profileData').innerHTML = tableHtml;
-
-            const prenom = fields['Prénom'] || '';
-            const nom = fields['Nom'] || fields['Nom de naissance'] || '';
-            const initials = (prenom.charAt(0) + (nom.charAt(0) || '')).toUpperCase() || '??';
-            document.getElementById('profileImage').textContent = initials.substring(0, 2);
-            document.getElementById('profileImageHeader').textContent = initials.substring(0, 2);
-            document.getElementById('profileName').textContent = `${prenom} ${nom}`.trim() || 'Inconnu';
-
-            document.getElementById('cameraIcon').addEventListener('click', function() {
-                document.getElementById('profileUpload').click();
-            });
-            document.getElementById('profileUpload').addEventListener('change', function(e) {
-                const file = e.target.files[0];
-                if (file) {
-                    const reader = new FileReader();
-                    reader.onload = function(e) {
-                        document.getElementById('profileImage').innerHTML = `<img src="${e.target.result}" alt="Profile Image" class="profile-img">`;
-                        document.getElementById('profileImageHeader').innerHTML = `<img src="${e.target.result}" alt="Profile Image" style="height: 40px; border-radius: 50%;">`;
-                    };
-                    reader.readAsDataURL(file);
-                }
-            });
-
-            document.getElementById('changeFormation').addEventListener('click', function() {
-                fetch('http://localhost:5000/change_formation', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email: userData.email, formation: '' })
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.next === 'form') {
-                        userData.formation = '';
-                        localStorage.setItem('userData', JSON.stringify(userData));
-                        document.getElementById('profileSection').style.display = 'none';
-                        loadForm();
-                    }
-                })
-                .catch(error => console.error('Erreur:', error));
-            });
-        })
-        .catch(error => console.error('Erreur:', error));
+          })
+          .catch(error => console.error('Erreur:', error));
+        });
+      })
+      .catch(error => console.error('Erreur:', error));
     }
 
     document.getElementById('logout').addEventListener('click', function(e) {
-        e.preventDefault();
-        userData = {};
-        localStorage.removeItem('userData');
-        document.getElementById('header').style.display = 'none';
-        document.getElementById('dashboardSection').style.display = 'none';
-        document.getElementById('profileSection').style.display = 'none';
-        document.getElementById('loginSection').style.display = 'block';
-        fetch('http://localhost:5000/delete_data?email=' + encodeURIComponent(userData.email), {
-            method: 'DELETE'
-        })
-        .then(response => response.json())
-        .then(data => console.log('Déconnexion:', data))
-        .catch(error => console.error('Erreur:', error));
+      e.preventDefault();
+      userData = {};
+      localStorage.removeItem('userData');
+      document.getElementById('header').style.display = 'none';
+      document.getElementById('dashboardSection').style.display = 'none';
+      document.getElementById('profileSection').style.display = 'none';
+      document.getElementById('loginSection').style.display = 'block';
+      fetch('http://localhost:5000/delete_data?email=' + encodeURIComponent(userData.email), {
+        method: 'DELETE'
+      })
+      .then(response => response.json())
+      .then(data => console.log('Déconnexion:', data))
+      .catch(error => console.error('Erreur:', error));
     });
 
     document.getElementById('editProfile').addEventListener('click', function() {
-        console.log('Bouton Modifier cliqué');
+      console.log('Bouton Modifier cliqué');
     });
   </script>
 </body>

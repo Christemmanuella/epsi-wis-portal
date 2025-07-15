@@ -696,6 +696,29 @@
             <div class="dashboard-band">
               <h4>DEVIA – Développement Informatique et Intelligence Artificielle</h4>
             </div>
+          `;
+          // Section pour utilisateurs non-admin : uniquement le nombre d'inscrits
+          if (userData.email !== 'admin@ecoles-epsi.net') {
+            dashboardContent += `
+              <div class="dashboard-band">
+                <h5>Informations :</h5>
+                <ul id="userStats">
+                  <li id="studentCount"></li>
+                </ul>
+              </div>
+            `;
+          }
+          // Section pour admin : analyse IA complète
+          if (userData.email === 'admin@ecoles-epsi.net') {
+            dashboardContent += `
+              <div class="dashboard-band" id="iaAnalysisSection">
+                <h5>Analyse IA (BC01) :</h5>
+                <ul id="iaAnalysis"></ul>
+                <div id="iaPieChart"></div> <!-- Placeholder pour le pie chart -->
+              </div>
+            `;
+          }
+          dashboardContent += `
             <div class="dashboard-band">
               <h5>Objectifs :</h5>
               <ul>
@@ -759,6 +782,69 @@
           `;
         }
         document.getElementById('dashboardContent').innerHTML = dashboardContent;
+
+        // Appel à l'analyse IA uniquement pour admin
+        if (formation === 'DEVIA' && userData.email === 'admin@ecoles-epsi.net') {
+          fetch('/analyze_data', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ formation: 'DEVIA' })
+          })
+          .then(response => response.json())
+          .then(analysis => {
+            const ul = document.getElementById('iaAnalysis');
+            if (analysis.error) {
+              ul.innerHTML = `<li>Erreur : ${analysis.error}</li>`;
+            } else {
+              ul.innerHTML = `
+                <li>Cluster assigné (exemple) : ${analysis.clusters[0] || 'N/A'}</li>
+                <li>Inertie (dispersion des clusters) : ${analysis.inertia.toFixed(2) || 'N/A'}</li>
+                <li>Score Silhouette (qualité du clustering) : ${analysis.silhouette?.toFixed(2) || 'N/A'}</li>
+                <li>Statistiques descriptives : ${JSON.stringify(analysis.stats)}</li>
+              `;
+
+              // Générer un pie chart basé sur les stats (uniquement pour admin)
+              if (analysis.stats) {
+                const stats = analysis.stats;
+                const labels = Object.keys(stats);
+                const values = Object.values(stats);
+                document.getElementById('iaPieChart').innerHTML = ''; // Nettoyer le placeholder
+                if (labels.length > 0 && values.length > 0) {
+                  const chartCode = {
+                    type: 'pie',
+                    data: {
+                      labels: labels,
+                      datasets: [{
+                        data: values,
+                        backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF']
+                      }]
+                    },
+                    options: {
+                      responsive: true,
+                      maintainAspectRatio: false
+                    }
+                  };
+                  document.getElementById('iaPieChart').innerHTML = `<div style="width: 300px; height: 300px;">${JSON.stringify(chartCode)}</div>`;
+                }
+              }
+            }
+          })
+          .catch(error => console.error('Erreur lors de l\'analyse IA:', error));
+        }
+
+        // Afficher le nombre d'inscrits pour tous (via /student_count)
+        fetch(`/student_count?email=${encodeURIComponent(userData.email)}`)
+          .then(resp => resp.json())
+          .then(countData => {
+            const studentCount = countData.count || 0;
+            const studentCountElement = document.getElementById('studentCount');
+            if (studentCountElement) {
+              studentCountElement.textContent = studentCount === 1
+                ? `Vous êtes le premier inscrit dans la formation de ${formation}`
+                : `Nombre d'étudiants dans votre formation : ${studentCount}`;
+            }
+          });
+
         fetch(`/submit_form`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -766,12 +852,12 @@
         })
         .then(resp => resp.json())
         .then(result => {
-          if (result.cluster !== undefined) {
+          if (result.cluster !== undefined && userData.email === 'admin@ecoles-epsi.net') {
             document.getElementById('userCluster').textContent = result.cluster === 0 && result.student_count === 1
               ? `Vous êtes le premier inscrit dans la formation de ${formation}`
               : `Votre cluster : ${result.cluster || 0}`;
           }
-          if (result.student_count !== undefined) {
+          if (result.student_count !== undefined && userData.email === 'admin@ecoles-epsi.net') {
             document.getElementById('studentCount').textContent = result.student_count === 1
               ? `Vous êtes le premier inscrit dans la formation de ${formation}`
               : `Nombre d'étudiants dans votre formation : ${result.student_count}`;
@@ -781,15 +867,6 @@
             document.getElementById('inertiaMetric').textContent = `Inertie (qualité du clustering) : ${result.inertia.toFixed(2)}`;
           }
         });
-        fetch(`/student_count?email=${encodeURIComponent(userData.email)}`)
-          .then(resp => resp.json())
-          .then(countData => {
-            console.log('Réponse de /student_count:', countData);
-            const studentCount = countData.count || 0;
-            document.getElementById('studentCount').textContent = studentCount === 1
-              ? `Vous êtes le premier inscrit dans la formation de ${formation}`
-              : `Nombre d'étudiants dans votre formation : ${studentCount}`;
-          });
       })
       .catch(error => console.error('Erreur:', error));
     }
